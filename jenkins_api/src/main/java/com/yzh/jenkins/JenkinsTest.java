@@ -3,6 +3,24 @@ package com.yzh.jenkins;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.model.*;
 import lombok.extern.slf4j.Slf4j;
+import org.apache.http.HttpHost;
+import org.apache.http.HttpRequest;
+import org.apache.http.auth.AuthScope;
+import org.apache.http.auth.UsernamePasswordCredentials;
+import org.apache.http.client.AuthCache;
+import org.apache.http.client.CredentialsProvider;
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.protocol.HttpClientContext;
+import org.apache.http.entity.ContentType;
+import org.apache.http.entity.StringEntity;
+import org.apache.http.impl.auth.BasicScheme;
+import org.apache.http.impl.client.BasicAuthCache;
+import org.apache.http.impl.client.BasicCredentialsProvider;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
+import org.apache.http.util.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -10,8 +28,11 @@ import org.junit.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+
+import static com.yzh.jenkins.JenkinsConstants.*;
 
 /**
  * 记录了项目中用到的一些JenkinsAPI
@@ -21,55 +42,6 @@ import java.util.Map;
  */
 @Slf4j
 public class JenkinsTest {
-
-    // jenkins的地址，主要要和jenkins上面配置的location一致
-    private static final String JENKINS_URL = "http://192.168.1.107:8081/jenkins";
-
-    // jenkins访问的用户名
-    private static final String JENKINS_USERNAME = "yuan";
-
-    // jenkins访问的密码
-    private static final String JENKINS_PASSWORD = "yuan1996";
-
-    // 推荐使用token  Jenkins高版本页面上没有关闭CSRF的入口了 这个后续会整理一篇博客
-    private static final String JENKINS_TOKEN = "";
-
-    // 测试使用项目名称
-    private static final String JENKINS_PROJECT_NAME = "test";
-
-    // 测试使用XML
-    private static final String JENKINS_PROJECT_XML = "<project>\n" +
-            "  <actions/>\n" +
-            "  <description></description>\n" +
-            "  <keepDependencies>false</keepDependencies>\n" +
-            "  <properties>\n" +
-            "    <hudson.model.ParametersDefinitionProperty>\n" +
-            "      <parameterDefinitions>\n" +
-            "        <hudson.model.StringParameterDefinition>\n" +
-            "          <name>name</name>\n" +
-            "          <description></description>\n" +
-            "          <defaultValue>haha</defaultValue>\n" +
-            "          <trim>false</trim>\n" +
-            "        </hudson.model.StringParameterDefinition>\n" +
-            "      </parameterDefinitions>\n" +
-            "    </hudson.model.ParametersDefinitionProperty>\n" +
-            "  </properties>\n" +
-            "  <scm class=\"hudson.scm.NullSCM\"/>\n" +
-            "  <canRoam>true</canRoam>\n" +
-            "  <disabled>false</disabled>\n" +
-            "  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>\n" +
-            "  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>\n" +
-            "  <triggers/>\n" +
-            "  <concurrentBuild>false</concurrentBuild>\n" +
-            "  <builders>\n" +
-            "    <hudson.tasks.Shell>\n" +
-            "      <command>echo $name</command>\n" +
-            "      <configuredLocalRules/>\n" +
-            "    </hudson.tasks.Shell>\n" +
-            "  </builders>\n" +
-            "  <publishers/>\n" +
-            "  <buildWrappers/>\n" +
-            "</project>";
 
     private JenkinsServer server;
 
@@ -190,6 +162,61 @@ public class JenkinsTest {
         } catch (InterruptedException e) {
             log.info(" error ");
         }
+    }
+
+    // --------------------- 直接使用rest api调用 ---------------------
+
+    /**
+     * 单独提取的一个公共方法
+     *
+     * @param url 请求地址
+     * @param httpRequest 请求方法对象
+     * @return
+     */
+    private String customHttpMsg(String url, HttpRequest httpRequest) throws URISyntaxException, IOException {
+        URI uri = new URI(url);
+        HttpHost host = new HttpHost(uri.getHost(), uri.getPort());
+        CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        credentialsProvider.setCredentials(new AuthScope(uri.getHost(), uri.getPort()),
+                new UsernamePasswordCredentials(JENKINS_USERNAME, JENKINS_TOKEN));
+        AuthCache authCache = new BasicAuthCache();
+        BasicScheme basicScheme = new BasicScheme();
+        authCache.put(host,basicScheme);
+        try (CloseableHttpClient httpClient = HttpClients.custom().setDefaultCredentialsProvider(credentialsProvider).build()) {
+            HttpClientContext httpClientContext = HttpClientContext.create();
+            httpClientContext.setAuthCache(authCache);
+            CloseableHttpResponse response = httpClient.execute(host, httpRequest, httpClientContext);
+            return EntityUtils.toString(response.getEntity(), StandardCharsets.UTF_8);
+        }
+    }
+
+    // 获取Job信息
+    @Test
+    public void testGetJob1() throws IOException, URISyntaxException {
+        String url = JENKINS_URL+"/job/"+JENKINS_PROJECT_NAME+"/config.xml";
+        HttpGet httpGet = new HttpGet(url);
+        String res = customHttpMsg(url, httpGet);
+        log.info("res is {}", res);
+    }
+
+    // 删除任务
+    @Test
+    public void testDeleteJob1() throws IOException, URISyntaxException {
+        String url = JENKINS_URL+"/job/"+JENKINS_PROJECT_NAME+"/doDelete/api/json";
+        HttpPost httpPost = new HttpPost(url);
+        String res = customHttpMsg(url, httpPost);
+        log.info("res is {}", res);
+    }
+
+    // 创建任务
+    @Test
+    public void testCreateJob1() throws IOException, URISyntaxException {
+        // http://192.168.1.107:8081/jenkins/createItem/api/json?name=test
+        String url = JENKINS_URL+"/createItem/api/json?name="+JENKINS_PROJECT_NAME;
+        HttpPost httpPost = new HttpPost(url);
+        httpPost.setEntity(new StringEntity(JENKINS_PROJECT_XML, ContentType.create("text/xml", "utf-8")));
+        String res = customHttpMsg(url, httpPost);
+        log.info("res is {}", res);
     }
 
 }

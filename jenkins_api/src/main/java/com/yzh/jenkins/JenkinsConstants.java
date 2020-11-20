@@ -17,10 +17,10 @@ public interface JenkinsConstants {
     String JENKINS_PASSWORD = "yuan1996";
 
     // 推荐使用token  Jenkins高版本页面上没有关闭CSRF的入口了 这个后续会整理一篇博客
-    String JENKINS_TOKEN = "11b70b55236e6cd7ac9bc9ba035fedcd76";
+    String JENKINS_TOKEN = "112c7c08043e02449e7fb97d253a657ede";
 
     // 测试使用项目名称
-    String JENKINS_PROJECT_NAME = "test";
+    String JENKINS_PROJECT_NAME = "test1";
 
     // 测试使用XML
     String JENKINS_PROJECT_XML = "<project>\n" +

@@ -1,7 +1,9 @@
 package com.yzh.jenkins;
 
+import com.alibaba.fastjson.JSON;
 import com.offbytwo.jenkins.JenkinsServer;
 import com.offbytwo.jenkins.model.*;
+import lombok.Data;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpRequest;
@@ -20,12 +22,14 @@ import org.apache.http.impl.client.BasicAuthCache;
 import org.apache.http.impl.client.BasicCredentialsProvider;
 import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
+import org.apache.http.message.BasicHeader;
 import org.apache.http.util.EntityUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
+import java.io.Serializable;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
@@ -177,6 +181,7 @@ public class JenkinsTest {
         URI uri = new URI(url);
         HttpHost host = new HttpHost(uri.getHost(), uri.getPort());
         CredentialsProvider credentialsProvider = new BasicCredentialsProvider();
+        // 这边需要注意一下是使用的token代替了密码  后续会整理下项目中遇到的一个问题
         credentialsProvider.setCredentials(new AuthScope(uri.getHost(), uri.getPort()),
                 new UsernamePasswordCredentials(JENKINS_USERNAME, JENKINS_TOKEN));
         AuthCache authCache = new BasicAuthCache();
@@ -219,4 +224,54 @@ public class JenkinsTest {
         log.info("res is {}", res);
     }
 
+
+    // --------------------- No valid crumb was included in the request问题 ---------------------
+
+    // crumb头实体对象
+    @Data
+    private static class CrumbEntity implements Serializable {
+        private String _class;
+        private String crumb;
+        private String crumbRequestField;
+    }
+
+    // 获取crumb头
+    private CrumbEntity getCrumb() throws IOException, URISyntaxException {
+        String url = JENKINS_URL + "/crumbIssuer/api/json";
+        HttpGet httpGet = new HttpGet(url);
+        String res = customHttpMsg(url, httpGet);
+        return JSON.parseObject(res, CrumbEntity.class);
+    }
+
+    // 测试获取crumb头
+    @Test
+    public void testGetCrumb() throws IOException, URISyntaxException {
+        CrumbEntity crumb = getCrumb();
+        log.info("crumb is {}", crumb);
+    }
+
+    // 测试方法调用前添加crumb头
+    // 但是测试无效
+    @Test
+    public void testAddCrumb() throws IOException, URISyntaxException {
+        String url = JENKINS_URL+"/createItem/api/json?name="+JENKINS_PROJECT_NAME;
+        HttpPost httpPost = new HttpPost(url);
+        CrumbEntity crumb = getCrumb();
+        // 添加crumb头
+        httpPost.addHeader(new BasicHeader(crumb.getCrumbRequestField(), crumb.getCrumb()));
+        httpPost.setEntity(new StringEntity(JENKINS_PROJECT_XML, ContentType.create("text/xml", "utf-8")));
+        String res = customHttpMsg(url, httpPost);
+        log.info("res is {}", res);
+    }
+
+    // 使用token 调用OK
+    @Test
+    public void testAddWithToken() throws IOException, URISyntaxException {
+        // http://192.168.1.107:8081/jenkins/createItem/api/json?name=test
+        String url = JENKINS_URL+"/createItem/api/json?name="+JENKINS_PROJECT_NAME;
+        HttpPost httpPost = new HttpPost(url);
+        httpPost.setEntity(new StringEntity(JENKINS_PROJECT_XML, ContentType.create("text/xml", "utf-8")));
+        String res = customHttpMsg(url, httpPost);
+        log.info("res is {}", res);
+    }
 }

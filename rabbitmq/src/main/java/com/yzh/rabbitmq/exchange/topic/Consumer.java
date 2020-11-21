@@ -30,7 +30,7 @@ public class Consumer {
 
         String exchangeName = "test_fanout_exchange";
         String exchangeType = "fanout";
-        String rountingKey = ""; //fanout不需要路由规则  消息会到所有与交换机绑定的队列上
+        String routingKey = ""; //fanout不需要路由规则  消息会到所有与交换机绑定的队列上
         String queueName = "test_fanout_queue";
 
         //声明交换机
@@ -38,7 +38,7 @@ public class Consumer {
         //声明队列
         channel.queueDeclare(queueName, false, false, false, null);
         //将交换机与队列进行绑定
-        channel.queueBind(queueName, exchangeName, rountingKey);
+        channel.queueBind(queueName, exchangeName, routingKey);
 
         DeliverCallback deliverCallback = (consumerTag, delivery) -> {
             String message = new String(delivery.getBody(), "UTF-8");

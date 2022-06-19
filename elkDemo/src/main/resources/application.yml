@@ -1,0 +1,5 @@
+spring:
+  application:
+    name: elk
+server:
+  port: 8777

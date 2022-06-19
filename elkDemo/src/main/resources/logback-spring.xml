@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<configuration>
+    <include resource="org/springframework/boot/logging/logback/base.xml"/>
+
+    <springProperty scope="context" name="applicationName" source="spring.application.name"/>
+
+    <appender name="infoLogstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:4560</destination>
+        <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+            <!--添加applicationName字段 -->
+            <customFields>{"applicationName":"${applicationName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <appender name="operationLogstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:4570</destination>
+        <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"applicationName":"${applicationName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <appender name="securityLogstash" class="net.logstash.logback.appender.LogstashTcpSocketAppender">
+        <destination>localhost:4580</destination>
+        <encoder charset="UTF-8" class="net.logstash.logback.encoder.LogstashEncoder">
+            <customFields>{"applicationName":"${applicationName}"}</customFields>
+        </encoder>
+    </appender>
+
+    <logger name="operation" level="info">
+        <appender-ref ref="operationLogstash"/>
+    </logger>
+
+    <logger name="security" level="info">
+        <appender-ref ref="securityLogstash"/>
+    </logger>
+
+    <root level="INFO">
+        <appender-ref ref="infoLogstash"/>
+        <appender-ref ref="CONSOLE"/>
+    </root>
+</configuration>

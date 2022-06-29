@@ -1,0 +1,4 @@
+FROM openjdk:8u171-jdk
+COPY ./harborImageClean-1.0-SNAPSHOT-jar-with-dependencies.jar  /data/harborImageClean-1.0-SNAPSHOT-jar-with-dependencies.jar
+WORKDIR /data
+ENTRYPOINT ["java", "-jar", "harborImageClean-1.0-SNAPSHOT-jar-with-dependencies.jar"]

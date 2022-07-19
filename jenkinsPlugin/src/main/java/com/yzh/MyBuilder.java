@@ -24,7 +24,7 @@ import java.io.PrintStream;
  */
 public class MyBuilder extends Builder {
     @Getter
-    private String name;
+    private final String name;
 
     @DataBoundConstructor
     public MyBuilder(String name) {
@@ -35,6 +35,9 @@ public class MyBuilder extends Builder {
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         PrintStream logger = listener.getLogger();
         logger.println("Hello " + name);
+        // 添加自定义action
+        build.addAction(new HelloWorldAction(name));
+        build.addAction(new HelloWorldAction2(name));
 
         boolean printLog = getDescriptor().isPrintLog();
         if (printLog) {

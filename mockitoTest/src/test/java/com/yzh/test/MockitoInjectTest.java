@@ -18,7 +18,7 @@ import org.mockito.MockitoAnnotations;
 public class MockitoInjectTest {
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
     }
 
     @Mock

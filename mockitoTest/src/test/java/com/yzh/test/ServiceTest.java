@@ -23,7 +23,7 @@ public class ServiceTest {
 
     @Before
     public void before() {
-        MockitoAnnotations.initMocks(this); // 1
+        MockitoAnnotations.openMocks(this); // 1
     }
 
     @Test

@@ -25,7 +25,7 @@ public class MockitoWhenTest {
 
     @Before
     public void setUp() {
-        MockitoAnnotations.initMocks(this);
+        MockitoAnnotations.openMocks(this);
     }
 
     // 测试返回指定的值 指定参数

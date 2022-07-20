@@ -15,6 +15,8 @@ import org.kohsuke.stapler.StaplerRequest;
 
 import java.io.IOException;
 import java.io.PrintStream;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * 测试jenkins插件
@@ -38,6 +40,8 @@ public class MyBuilder extends Builder {
         // 添加自定义action
         build.addAction(new HelloWorldAction(name));
         build.addAction(new HelloWorldAction2(name));
+        // 提供对外api接口
+        build.addAction(new HelloWorldAction3(name, new SimpleDateFormat("yyyy-MM-dd").format(new Date())));
 
         boolean printLog = getDescriptor().isPrintLog();
         if (printLog) {

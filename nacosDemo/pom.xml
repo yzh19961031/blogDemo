@@ -8,6 +8,8 @@
         <module>nacos-consumer</module>
         <module>nacos-config1</module>
         <module>nacos-config2</module>
+        <module>nacos-https-provider</module>
+        <module>nacos-https-consumer</module>
     </modules>
     <parent>
         <groupId>org.springframework.boot</groupId>

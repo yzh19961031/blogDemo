@@ -1,8 +1,10 @@
 package com.yzh;
 
 import edu.umd.cs.findbugs.annotations.NonNull;
+import hudson.EnvVars;
 import hudson.Extension;
 import hudson.Launcher;
+import hudson.Util;
 import hudson.model.AbstractBuild;
 import hudson.model.AbstractProject;
 import hudson.model.BuildListener;
@@ -36,7 +38,10 @@ public class MyBuilder extends Builder {
     @Override
     public boolean perform(AbstractBuild<?, ?> build, Launcher launcher, BuildListener listener) throws InterruptedException, IOException {
         PrintStream logger = listener.getLogger();
-        logger.println("Hello " + name);
+        // 参数化
+        EnvVars environment = build.getEnvironment(listener);
+        String param = Util.replaceMacro(name, environment);
+        logger.println("Hello " + param);
         // 添加自定义action
         build.addAction(new HelloWorldAction(name));
         build.addAction(new HelloWorldAction2(name));

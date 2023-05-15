@@ -1,0 +1,19 @@
+s3:
+  endpoint: http://10.1.140.3:9000
+  ak: minioadmin
+  sk: minioadmin
+
+spring:
+  cloud:
+    gateway:
+      routes:
+        - id: s3-route
+          uri: ${s3.endpoint}
+          predicates:
+            - Path=/**
+          filters:
+            - PreserveHostHeader
+            - StripPrefix=1
+            - AWSSign=${s3.endpoint},${s3.ak},${s3.sk}
+server:
+  port: 8777

@@ -10,7 +10,7 @@ spring:
         - id: s3-route
           uri: ${s3.endpoint}
           predicates:
-            - Path=/**
+            - Path=/s3/**
           filters:
             - PreserveHostHeader
             - StripPrefix=1

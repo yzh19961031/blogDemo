@@ -1,0 +1,78 @@
+import java.text.SimpleDateFormat
+import java.util.TimeZone
+
+// 构建版本
+def createVersion() {
+    def simpleDateFormat = new SimpleDateFormat("yyyyMMddHHmmss")
+    simpleDateFormat.timeZone = TimeZone.getTimeZone("Asia/Shanghai")
+    return simpleDateFormat.format(new Date()) + "_${env.branch}"
+}
+
+// 获取ssh连接
+def GetRemoteServer(ip, username, password) {
+    def remote = [:]
+    remote.name = ip
+    remote.host = ip
+    remote.user = username
+    remote.password = password
+    remote.allowAnyHosts = true
+    return remote
+}
+
+pipeline {
+    agent none
+    environment {
+        _version = createVersion()
+    }
+    stages {
+        stage('Git Checkout') {
+            agent any
+            steps {
+                checkout([
+	                $class: 'GitSCM',
+	                branches: [[name: "${branch}"]],
+	                doGenerateSubmoduleConfigurations: false,
+	                extensions: [],
+	                gitTool: 'Default',
+	                submoduleCfg: [],
+	                userRemoteConfigs: [[url: 'xxx.git',credentialsId: 'xxx',]]
+                ])
+            }
+        }
+        stage('Source Package') {
+            agent {
+                docker {
+                    image 'golang:1.21.0'
+                    args '-v go-cache:/go/pkg/mod'
+                }
+            }
+            steps {
+                sh 'go env -w GO111MODULE=on'
+                sh 'go env -w GOPROXY=https://goproxy.cn,direct'
+                sh 'go mod download'
+                sh 'CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -ldflags="-s -w" -o go-pipeline'
+            }
+        }
+
+        stage('Image Build') {
+            agent any
+            steps {
+                sh 'docker build -f $WORKSPACE/Dockerfile -t {{harbor}}/common/go-pipeline:${_version} $WORKSPACE'
+                sh 'rm -f $WORKSPACE/go-pipeline'
+                sh 'docker push {{harbor}}/common/go-pipeline:${_version}'
+                sh 'docker rmi {{harbor}}/common/go-pipeline:${_version}'
+            }
+        }
+
+        stage('Publish To Env') {
+            agent any
+            steps {
+                script {
+                    def remote = GetRemoteServer('127.0.0.1', 'root', 'root')
+                    sshCommand remote: remote, command: "docker stop go-pipeline; docker rm go-pipeline"
+                    sshCommand remote: remote, command: "docker run -it  --name go-pipeline -d -p 8080:8080  {{harbor}}/common/go-pipeline:${_version}"
+                }
+            }
+        }
+    }
+}

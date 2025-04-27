@@ -1,0 +1,20 @@
+spring:
+  ai:
+    openai:
+      api-key: ${your_api_key}
+      base-url: https://api.deepseek.com
+      chat:
+        options:
+          model: deepseek-chat
+    mcp:
+      client:
+        sse:
+          connections:
+            server1:
+              url: http://localhost:8777 # client的地址 用于发现tools
+        toolcallback:
+          enabled: true # 是否开启工具回调 这个需要设置为true
+        name: mcp-client
+        request-timeout: 30s
+server:
+  port: 8666
